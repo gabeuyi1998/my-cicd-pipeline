@@ -4,8 +4,9 @@ pipeline {
         AWS_DEFAULT_REGION = 'ap-southeast-2'
         TF_BUCKET = 'go-cicd-bucket'
         TF_DYNAMO_TABLE = 'GO-TFstate-table'
-        ECR_REPO = 'GO_my-app-repo'
+        ECR_REPO = 'go-my-app-repo'
         DOCKER_IMAGE = ''
+        AWS_ACCOUNT_ID = '866934333672' 
     }
     stages {
         stage('Checkout Code') {
@@ -22,8 +23,8 @@ pipeline {
         stage('Build & Push Docker Image') {
             steps {
                 script {
-                    DOCKER_IMAGE = docker.build("$ECR_REPO:$BUILD_ID")
-                    docker.withRegistry('https://866934333672.dkr.ecr.ap-southeast-2.amazonaws.com', 'ecr:login') {
+                    DOCKER_IMAGE = docker.build("$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO:$BUILD_ID")
+                    docker.withRegistry("https://$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com", 'ecr:login') {
                         DOCKER_IMAGE.push()
                     }
                 }
@@ -31,9 +32,19 @@ pipeline {
         }
         stage('Deploy to ECS') {
             steps {
-                script {
-                    sh 'ecs-cli compose --project-name GO_my-ecs-service service up --create-log-groups --cluster-config GO_my-ecs-cluster-config --ecs-profile my-ecs-profile'
-                }
+                sh '''
+                ecs-cli configure --cluster go-my-ecs-cluster --region $AWS_DEFAULT_REGION
+                ecs-cli compose --file docker-compose.yml up
+                '''
+            }
+        }
+        stage('Deploy to Elastic Beanstalk') {
+            steps {
+                sh '''
+                eb init -p docker go-my-beanstalk-app --region $AWS_DEFAULT_REGION
+                eb create go-my-environment
+                eb deploy
+                '''
             }
         }
     }

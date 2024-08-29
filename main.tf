@@ -4,10 +4,10 @@ provider "aws" {
 
 # Create the ECR repository
 resource "aws_ecr_repository" "repo" {
-  name = "go-my-app-repo"  # Updated to meet naming constraints
+  name = "go-my-app-repo"
 
   tags = {
-    Name = "go-my-app-repo"
+    Name        = "go-my-app-repo"
     Environment = "Production"
   }
 }
@@ -17,7 +17,7 @@ resource "aws_ecs_cluster" "cluster" {
   name = "go-my-ecs-cluster"
 
   tags = {
-    Name = "go-my-ecs-cluster"
+    Name        = "go-my-ecs-cluster"
     Environment = "Production"
   }
 }
@@ -38,7 +38,7 @@ resource "aws_iam_role" "ecs_task_execution_role" {
   })
 
   tags = {
-    Name = "go-ecs-task-execution-role"
+    Name        = "go-ecs-task-execution-role"
     Environment = "Production"
   }
 }
@@ -51,13 +51,13 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
 
 # Create the ECS task definition
 resource "aws_ecs_task_definition" "task" {
-  family                = "go-my-app-task"
-  network_mode          = "awsvpc"
+  family                   = "go-my-app-task"
+  network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                   = "256"
-  memory                = "512"
-  execution_role_arn    = aws_iam_role.ecs_task_execution_role.arn
-  container_definitions = jsonencode([{
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  container_definitions    = jsonencode([{
     name      = "app"
     image     = "${aws_ecr_repository.repo.repository_url}:latest"
     essential = true
@@ -65,10 +65,18 @@ resource "aws_ecs_task_definition" "task" {
       containerPort = 3000
       hostPort      = 3000
     }]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        awslogs-group         = "/ecs/go-my-app-task"
+        awslogs-region        = "ap-southeast-2"
+        awslogs-stream-prefix = "ecs"
+      }
+    }
   }])
 
   tags = {
-    Name = "go-my-app-task"
+    Name        = "go-my-app-task"
     Environment = "Production"
   }
 }
@@ -81,13 +89,41 @@ resource "aws_ecs_service" "service" {
   desired_count   = 1
   launch_type     = "FARGATE"
   network_configuration {
-    subnets          = ["subnet-08ee8d0f3aa0d548a", "subnet-0b498229169ed1048"]  # Your provided subnets
-    security_groups  = ["sg-0e9a23e8bdad9daac"]       # Use your specified security group
+    subnets          = ["subnet-08ee8d0f3aa0d548a", "subnet-0b498229169ed1048"]  
+    security_groups  = ["sg-0e9a23e8bdad9daac"]  
     assign_public_ip = true
   }
 
   tags = {
-    Name = "go-my-ecs-service"
+    Name        = "go-my-ecs-service"
+    Environment = "Production"
+  }
+}
+
+
+resource "aws_s3_bucket" "terraform_state" {
+  bucket = "go-cicd-bucket"
+  acl    = "private"
+
+  tags = {
+    Name        = "go-cicd-bucket"
+    Environment = "Production"
+  }
+}
+
+
+resource "aws_dynamodb_table" "terraform_locks" {
+  name           = "GO-TFstate-table"
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key       = "LockID"
+
+  attribute {
+    name = "LockID"
+    type = "S"
+  }
+
+  tags = {
+    Name        = "GO-TFstate-table"
     Environment = "Production"
   }
 }
