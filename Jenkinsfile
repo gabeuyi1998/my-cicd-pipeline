@@ -6,9 +6,14 @@ pipeline {
         TF_DYNAMO_TABLE = 'GO-TFstate-table'
         ECR_REPO = 'go-my-app-repo'
         DOCKER_IMAGE = ''
-        AWS_ACCOUNT_ID = '866934333672' 
+        AWS_ACCOUNT_ID = '866934333672'
     }
     stages {
+        stage('Clean Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
         stage('Checkout Code') {
             steps {
                 git 'https://github.com/gabeuyi1998/my-cicd-pipeline.git'
@@ -16,8 +21,10 @@ pipeline {
         }
         stage('Terraform Init & Apply') {
             steps {
-                sh 'terraform init -backend-config="bucket=$TF_BUCKET" -backend-config="dynamodb_table=$TF_DYNAMO_TABLE"'
-                sh 'terraform apply -auto-approve'
+                sh '''
+                terraform init -backend-config="bucket=$TF_BUCKET" -backend-config="dynamodb_table=$TF_DYNAMO_TABLE"
+                terraform apply -auto-approve
+                '''
             }
         }
         stage('Build & Push Docker Image') {
