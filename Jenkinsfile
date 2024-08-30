@@ -27,7 +27,7 @@ pipeline {
                                   credentialsId: 'aws-credentials']]) {
                     sh '''
                     terraform init -backend-config="bucket=$TF_BUCKET" -backend-config="dynamodb_table=$TF_DYNAMO_TABLE"
-                    terraform apply -auto-approve || exit 1
+                    terraform apply /Users/gabrielonyijen/aws/go-cicd-pipeline/TF-Automation/dev-tf -auto-approve || exit 1
                     '''
                 }
             }
