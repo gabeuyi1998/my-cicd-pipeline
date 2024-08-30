@@ -85,7 +85,7 @@ resource "aws_ecs_service" "service" {
   desired_count   = 1
   launch_type     = "FARGATE"
   network_configuration {
-    subnets          = ["subnet-08ee8d0f3aa0d548a", "subnet-0b498229169ed1048"]  
+    subnets          = ["subnet-08ee8d0f3aa0d548a"]  
     security_groups  = ["sg-0e9a23e8bdad9daac"]  
     assign_public_ip = true
   }
@@ -122,8 +122,10 @@ resource "aws_iam_role_policy_attachment" "ssm_policy_attachment" {
 
 # Create the EC2 instance with SSM role
 resource "aws_instance" "app_server" {
-  ami           = "ami-0375ab65ee943a2a6" # Updated with the correct AMI ID
-  instance_type = "t2.micro"
+  ami                  = "ami-0375ab65ee943a2a6" # Updated with the correct AMI ID
+  instance_type        = "t2.micro"
+  subnet_id            = "subnet-08ee8d0f3aa0d548a"
+  vpc_security_group_ids = ["sg-0e9a23e8bdad9daac"]
   iam_instance_profile = aws_iam_instance_profile.ssm_profile.name
   tags = {
     Name        = "go-app-server"
@@ -142,7 +144,7 @@ data "aws_s3_bucket" "terraform_state" {
 }
 
 # Use the existing S3 bucket for Terraform state
-resource "aws_s3_bucket_object" "terraform_state_file" {
+resource "aws_s3_object" "terraform_state_file" {
   bucket = data.aws_s3_bucket.terraform_state.bucket
   key    = "terraform.tfstate"
   acl    = "private"
