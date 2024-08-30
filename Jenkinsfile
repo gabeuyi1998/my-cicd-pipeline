@@ -35,7 +35,8 @@ pipeline {
         stage('Setup Docker Buildx') {
             steps {
                 sh '''
-                docker buildx create --use || echo "Buildx is already set up"
+                docker buildx create --name mybuilder --driver docker-container --use || docker buildx use mybuilder
+                docker buildx inspect mybuilder --bootstrap
                 '''
             }
         }
@@ -45,11 +46,11 @@ pipeline {
                                   credentialsId: 'aws-credentials']]) {
                     dir('app') { 
                         script {
-                            DOCKER_IMAGE="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO:$BUILD_ID"
-                            sh '''
-                            docker buildx build --platform linux/amd64 -t $DOCKER_IMAGE .
-                            docker push $DOCKER_IMAGE || exit 1
-                            '''
+                            def dockerImage = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO}:${BUILD_ID}"
+                            sh """
+                            docker buildx build --platform linux/amd64 -t ${dockerImage} .
+                            docker push ${dockerImage} || exit 1
+                            """
                         }
                     }
                 }
