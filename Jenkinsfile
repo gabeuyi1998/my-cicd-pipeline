@@ -26,7 +26,7 @@ pipeline {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
                                   credentialsId: 'aws-credentials']]) {
                     sh '''
-                    terraform init -backend-config="bucket=$TF_BUCKET" -backend-config="dynamodb_table=$TF_DYNAMO_TABLE"
+                    terraform init /Users/gabrielonyijen/aws/go-cicd-pipeline/TF-Automation/dev-tf -backend-config="bucket=$TF_BUCKET" -backend-config="dynamodb_table=$TF_DYNAMO_TABLE"
                     terraform apply /Users/gabrielonyijen/aws/go-cicd-pipeline/TF-Automation/dev-tf -auto-approve || exit 1
                     '''
                 }
