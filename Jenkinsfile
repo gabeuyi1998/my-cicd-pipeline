@@ -27,14 +27,22 @@ pipeline {
                 '''
             }
         }
+        stage('Setup Docker Buildx') {
+            steps {
+                sh '''
+                docker buildx create --use
+                '''
+            }
+        }
         stage('Build & Push Docker Image') {
             steps {
                 dir('app') { // Change to the app directory
                     script {
-                        DOCKER_IMAGE = docker.build("$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO:$BUILD_ID")
-                        docker.withRegistry("https://$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com", 'ecr:login') {
-                            DOCKER_IMAGE.push()
-                        }
+                        DOCKER_IMAGE="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO:$BUILD_ID"
+                        sh '''
+                        docker buildx build --platform linux/amd64 -t $DOCKER_IMAGE .
+                        docker push $DOCKER_IMAGE
+                        '''
                     }
                 }
             }
