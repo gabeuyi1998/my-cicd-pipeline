@@ -54,6 +54,7 @@ resource "aws_ecs_task_definition" "task" {
   memory                   = "512"
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
   container_definitions    = jsonencode([{
+ #Make more Dynamic as well for name   
     name      = "app"
     image     = "${aws_ecr_repository.repo.repository_url}:latest"
     essential = true
@@ -64,6 +65,7 @@ resource "aws_ecs_task_definition" "task" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
+#fix make dynamic count or index to modulize
         awslogs-group         = "/ecs/go-my-app-task"
         awslogs-region        = "ap-southeast-2"
         awslogs-stream-prefix = "ecs"

@@ -81,6 +81,7 @@ resource "aws_ecs_service" "service" {
   desired_count   = 1
   launch_type     = "FARGATE"
   network_configuration {
+  #DYnamic subnets and security  
     subnets          = ["subnet-08ee8d0f3aa0d548a", "subnet-0b498229169ed1048"]  # Your provided subnets
     security_groups  = ["sg-0e9a23e8bdad9daac"]       # Use your specified security group
     assign_public_ip = true
