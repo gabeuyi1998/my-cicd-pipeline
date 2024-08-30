@@ -100,9 +100,15 @@ resource "aws_ecs_service" "service" {
   }
 }
 
-
-resource "aws_s3_bucket" "terraform_state" {
+# Reference the existing S3 bucket
+data "aws_s3_bucket" "terraform_state" {
   bucket = "go-cicd-bucket"
+}
+
+# Use the existing S3 bucket for Terraform state
+resource "aws_s3_bucket_object" "terraform_state_file" {
+  bucket = data.aws_s3_bucket.terraform_state.bucket
+  key    = "terraform.tfstate"
   acl    = "private"
 
   tags = {
@@ -111,19 +117,7 @@ resource "aws_s3_bucket" "terraform_state" {
   }
 }
 
-
-resource "aws_dynamodb_table" "terraform_locks" {
-  name           = "GO-TFstate-table"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "LockID"
-
-  attribute {
-    name = "LockID"
-    type = "S"
-  }
-
-  tags = {
-    Name        = "GO-TFstate-table"
-    Environment = "Production"
-  }
+# Use the existing DynamoDB table
+data "aws_dynamodb_table" "terraform_locks" {
+  name = "GO-TFstate-table"
 }
