@@ -7,6 +7,8 @@ pipeline {
         ECR_REPO = 'go-my-app-repo'
         DOCKER_IMAGE = ''
         AWS_ACCOUNT_ID = '866934333672'
+        AWS_ACCESS_KEY_ID = credentials('aws-access-key-id')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
     }
     stages {
         stage('Clean Workspace') {
