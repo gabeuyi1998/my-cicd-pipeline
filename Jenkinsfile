@@ -29,10 +29,12 @@ pipeline {
         }
         stage('Build & Push Docker Image') {
             steps {
-                script {
-                    DOCKER_IMAGE = docker.build("$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO:$BUILD_ID")
-                    docker.withRegistry("https://$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com", 'ecr:login') {
-                        DOCKER_IMAGE.push()
+                dir('app') { // Change to the app directory
+                    script {
+                        DOCKER_IMAGE = docker.build("$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO:$BUILD_ID")
+                        docker.withRegistry("https://$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com", 'ecr:login') {
+                            DOCKER_IMAGE.push()
+                        }
                     }
                 }
             }
