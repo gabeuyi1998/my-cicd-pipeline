@@ -85,8 +85,8 @@ resource "aws_ecs_service" "service" {
   desired_count   = 1
   launch_type     = "FARGATE"
   network_configuration {
-    subnets          = ["subnet-08ee8d0f3aa0d548a", "subnet-0b498229169ed1048"]  
-    security_groups  = ["sg-0e9a23e8bdad9daac"]  
+    subnets          = ["subnet-08ee8d0f3aa0d548a", "subnet-0b498229169ed1048"]
+    security_groups  = ["sg-0e9a23e8bdad9daac"]
     assign_public_ip = true
   }
 
@@ -141,18 +141,17 @@ data "aws_s3_bucket" "terraform_state" {
   bucket = "go-cicd-bucket"
 }
 
-# Use the existing S3 bucket for Terraform state
-resource "aws_s3_bucket_object" "terraform_state_file" {
-  bucket = data.aws_s3_bucket.terraform_state.bucket
-  key    = "terraform.tfstate"
-  acl    = "private"
-  tags = {
-    Name        = "go-cicd-bucket"
-    Environment = "Production"
-  }
-}
-
-# Use the existing DynamoDB table
+# Use the existing DynamoDB table for state locking
 data "aws_dynamodb_table" "terraform_locks" {
   name = "GO-TFstate-table"
+}
+
+# Backend configuration
+terraform {
+  backend "s3" {
+    bucket         = data.aws_s3_bucket.terraform_state.bucket
+    key            = "terraform.tfstate"
+    region         = "ap-southeast-2"
+    dynamodb_table = data.aws_dynamodb_table.terraform_locks.name
+  }
 }
