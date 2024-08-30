@@ -48,8 +48,7 @@ pipeline {
                         script {
                             def dockerImage = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO}:${BUILD_ID}"
                             sh """
-                            docker buildx build --platform linux/amd64 -t ${dockerImage} .
-                            docker push ${dockerImage} || exit 1
+                            docker buildx build --platform linux/amd64,linux/arm64 -t ${dockerImage} --push .
                             """
                         }
                     }
