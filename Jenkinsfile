@@ -27,7 +27,7 @@ pipeline {
                                   credentialsId: 'aws-credentials']]) {
                     sh '''
                     terraform init -backend-config="bucket=$TF_BUCKET" -backend-config="dynamodb_table=$TF_DYNAMO_TABLE"
-                    terraform apply -auto-approve
+                    terraform apply -auto-approve || exit 1
                     '''
                 }
             }
@@ -35,7 +35,7 @@ pipeline {
         stage('Setup Docker Buildx') {
             steps {
                 sh '''
-                docker buildx create --use
+                docker buildx create --use || echo "Buildx is already set up"
                 '''
             }
         }
@@ -43,12 +43,12 @@ pipeline {
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
                                   credentialsId: 'aws-credentials']]) {
-                    dir('app') { // Change to the app directory
+                    dir('app') { 
                         script {
                             DOCKER_IMAGE="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO:$BUILD_ID"
                             sh '''
                             docker buildx build --platform linux/amd64 -t $DOCKER_IMAGE .
-                            docker push $DOCKER_IMAGE
+                            docker push $DOCKER_IMAGE || exit 1
                             '''
                         }
                     }
@@ -61,7 +61,7 @@ pipeline {
                                   credentialsId: 'aws-credentials']]) {
                     sh '''
                     ecs-cli configure --cluster go-my-ecs-cluster --region $AWS_DEFAULT_REGION
-                    ecs-cli compose --file docker-compose.yml up
+                    ecs-cli compose --file docker-compose.yml up || exit 1
                     '''
                 }
             }
@@ -72,11 +72,22 @@ pipeline {
                                   credentialsId: 'aws-credentials']]) {
                     sh '''
                     eb init -p docker go-my-beanstalk-app --region $AWS_DEFAULT_REGION
-                    eb create go-my-environment
-                    eb deploy
+                    eb create go-my-environment || echo "Environment already exists"
+                    eb deploy || exit 1
                     '''
                 }
             }
+        }
+    }
+    post {
+        always {
+            echo 'Pipeline finished.'
+        }
+        success {
+            echo 'Pipeline succeeded.'
+        }
+        failure {
+            echo 'Pipeline failed. Please check the logs.'
         }
     }
 }
