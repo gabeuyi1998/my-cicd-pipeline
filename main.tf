@@ -5,7 +5,6 @@ provider "aws" {
 # Create the ECR repository
 resource "aws_ecr_repository" "repo" {
   name = "go-my-app-repo"
-
   tags = {
     Name        = "go-my-app-repo"
     Environment = "Production"
@@ -15,7 +14,6 @@ resource "aws_ecr_repository" "repo" {
 # Create the ECS cluster
 resource "aws_ecs_cluster" "cluster" {
   name = "go-my-ecs-cluster"
-
   tags = {
     Name        = "go-my-ecs-cluster"
     Environment = "Production"
@@ -25,7 +23,6 @@ resource "aws_ecs_cluster" "cluster" {
 # Create the IAM role for ECS task execution
 resource "aws_iam_role" "ecs_task_execution_role" {
   name = "go-ecs-task-execution-role"
-
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -36,7 +33,6 @@ resource "aws_iam_role" "ecs_task_execution_role" {
       }
     }]
   })
-
   tags = {
     Name        = "go-ecs-task-execution-role"
     Environment = "Production"
@@ -100,6 +96,46 @@ resource "aws_ecs_service" "service" {
   }
 }
 
+# Create the IAM role for SSM access
+resource "aws_iam_role" "ssm_role" {
+  name = "go-ssm-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "ec2.amazonaws.com"
+      }
+    }]
+  })
+  tags = {
+    Name        = "go-ssm-role"
+    Environment = "Production"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "ssm_policy_attachment" {
+  role       = aws_iam_role.ssm_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+# Create the EC2 instance with SSM role
+resource "aws_instance" "app_server" {
+  ami           = "ami-0c55b159cbfafe1f0" # Replace with your AMI ID
+  instance_type = "t2.micro"
+  iam_instance_profile = aws_iam_instance_profile.ssm_profile.name
+  tags = {
+    Name        = "go-app-server"
+    Environment = "Production"
+  }
+}
+
+resource "aws_iam_instance_profile" "ssm_profile" {
+  name = "go-ssm-profile"
+  role = aws_iam_role.ssm_role.name
+}
+
 # Reference the existing S3 bucket
 data "aws_s3_bucket" "terraform_state" {
   bucket = "go-cicd-bucket"
@@ -110,7 +146,6 @@ resource "aws_s3_bucket_object" "terraform_state_file" {
   bucket = data.aws_s3_bucket.terraform_state.bucket
   key    = "terraform.tfstate"
   acl    = "private"
-
   tags = {
     Name        = "go-cicd-bucket"
     Environment = "Production"
