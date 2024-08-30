@@ -7,8 +7,6 @@ pipeline {
         ECR_REPO = 'go-my-app-repo'
         DOCKER_IMAGE = ''
         AWS_ACCOUNT_ID = '866934333672'
-        AWS_ACCESS_KEY_ID = credentials('aws-access-key-id')
-        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
     }
     stages {
         stage('Clean Workspace') {
@@ -25,10 +23,13 @@ pipeline {
         }
         stage('Terraform Init & Apply') {
             steps {
-                sh '''
-                terraform init -backend-config="bucket=$TF_BUCKET" -backend-config="dynamodb_table=$TF_DYNAMO_TABLE"
-                terraform apply -auto-approve
-                '''
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
+                                  credentialsId: 'aws-credentials']]) {
+                    sh '''
+                    terraform init -backend-config="bucket=$TF_BUCKET" -backend-config="dynamodb_table=$TF_DYNAMO_TABLE"
+                    terraform apply -auto-approve
+                    '''
+                }
             }
         }
         stage('Setup Docker Buildx') {
@@ -40,32 +41,41 @@ pipeline {
         }
         stage('Build & Push Docker Image') {
             steps {
-                dir('app') { // Change to the app directory
-                    script {
-                        DOCKER_IMAGE="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO:$BUILD_ID"
-                        sh '''
-                        docker buildx build --platform linux/amd64 -t $DOCKER_IMAGE .
-                        docker push $DOCKER_IMAGE
-                        '''
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
+                                  credentialsId: 'aws-credentials']]) {
+                    dir('app') { // Change to the app directory
+                        script {
+                            DOCKER_IMAGE="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO:$BUILD_ID"
+                            sh '''
+                            docker buildx build --platform linux/amd64 -t $DOCKER_IMAGE .
+                            docker push $DOCKER_IMAGE
+                            '''
+                        }
                     }
                 }
             }
         }
         stage('Deploy to ECS') {
             steps {
-                sh '''
-                ecs-cli configure --cluster go-my-ecs-cluster --region $AWS_DEFAULT_REGION
-                ecs-cli compose --file docker-compose.yml up
-                '''
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
+                                  credentialsId: 'aws-credentials']]) {
+                    sh '''
+                    ecs-cli configure --cluster go-my-ecs-cluster --region $AWS_DEFAULT_REGION
+                    ecs-cli compose --file docker-compose.yml up
+                    '''
+                }
             }
         }
         stage('Deploy to Elastic Beanstalk') {
             steps {
-                sh '''
-                eb init -p docker go-my-beanstalk-app --region $AWS_DEFAULT_REGION
-                eb create go-my-environment
-                eb deploy
-                '''
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
+                                  credentialsId: 'aws-credentials']]) {
+                    sh '''
+                    eb init -p docker go-my-beanstalk-app --region $AWS_DEFAULT_REGION
+                    eb create go-my-environment
+                    eb deploy
+                    '''
+                }
             }
         }
     }
