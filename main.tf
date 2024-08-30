@@ -122,7 +122,7 @@ resource "aws_iam_role_policy_attachment" "ssm_policy_attachment" {
 
 # Create the EC2 instance with SSM role
 resource "aws_instance" "app_server" {
-  ami           = "ami-0c55b159cbfafe1f0" # Replace with your AMI ID
+  ami           = "ami-0375ab65ee943a2a6" # Updated with the correct AMI ID
   instance_type = "t2.micro"
   iam_instance_profile = aws_iam_instance_profile.ssm_profile.name
   tags = {
