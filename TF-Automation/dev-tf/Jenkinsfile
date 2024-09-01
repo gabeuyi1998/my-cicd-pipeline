@@ -1,0 +1,65 @@
+pipeline {
+    agent any
+    environment {
+        AWS_DEFAULT_REGION = 'ap-southeast-2'
+        TF_BUCKET = 'go-cicd-bucket'
+        TF_DYNAMO_TABLE = 'GO-TFstate-table'
+    }
+    stages {
+        stage('Clean Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+        stage('Checkout Terraform Code') {
+            steps {
+                git branch: 'main', 
+                    url: 'https://github.com/gabeuyi1998/my-cicd-pipeline.git',
+                    credentialsId: 'github-credentials'
+            }
+        }
+        stage('Terraform Init') {
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
+                                  credentialsId: 'aws-credentials']]) {
+                    sh '''
+                    terraform -chdir=TF-Automation/dev-tf init \
+                        -backend-config="bucket=$TF_BUCKET" \
+                        -backend-config="dynamodb_table=$TF_DYNAMO_TABLE"
+                    '''
+                }
+            }
+        }
+        stage('Terraform Plan') {
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
+                                  credentialsId: 'aws-credentials']]) {
+                    sh '''
+                    terraform -chdir=TF-Automation/dev-tf plan
+                    '''
+                }
+            }
+        }
+        stage('Terraform Apply') {
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
+                                  credentialsId: 'aws-credentials']]) {
+                    sh '''
+                    terraform -chdir=TF-Automation/dev-tf apply -auto-approve
+                    '''
+                }
+            }
+        }
+    }
+    post {
+        always {
+            echo 'Pipeline finished.'
+        }
+        success {
+            echo 'Terraform Pipeline succeeded.'
+        }
+        failure {
+            echo 'Terraform Pipeline failed. Please check the logs.'
+        }
+    }
+}
