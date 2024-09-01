@@ -31,3 +31,5 @@ terraform.rc
 
 # Ignore log files
 *.log
+
+echo ".DS_Store" >> .gitignore
