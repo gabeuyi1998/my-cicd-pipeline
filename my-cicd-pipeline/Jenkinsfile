@@ -1,0 +1,56 @@
+pipeline {
+    agent any
+    environment {
+        AWS_DEFAULT_REGION = 'ap-southeast-2'
+        ECR_REPO = '866934333672.dkr.ecr.ap-southeast-2.amazonaws.com/GO_my-app-repo'
+        DOCKER_IMAGE = ''
+    }
+    stages {
+        stage('Clean Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/gabeuyi1998/my-cicd-pipeline.git',
+                    credentialsId: 'github-credentials'
+            }
+        }
+        stage('Build & Push Docker Image') {
+            steps {
+                script {
+                    DOCKER_IMAGE = docker.build("$ECR_REPO:$BUILD_ID")
+                    docker.withRegistry('https://866934333672.dkr.ecr.ap-southeast-2.amazonaws.com', 'ecr:login') {
+                        DOCKER_IMAGE.push()
+                    }
+                }
+            }
+        }
+        stage('Deploy to ECS') {
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
+                                  credentialsId: 'aws-credentials']]) {
+                    sh '''
+                    ecs-cli compose --project-name GO_my-ecs-service service up \
+                        --create-log-groups \
+                        --cluster-config GO_my-ecs-cluster-config \
+                        --ecs-profile my-ecs-profile
+                    '''
+                }
+            }
+        }
+    }
+    post {
+        always {
+            echo 'Docker & ECS Deployment Pipeline finished.'
+        }
+        success {
+            echo 'Docker & ECS Deployment Pipeline succeeded.'
+        }
+        failure {
+            echo 'Docker & ECS Deployment Pipeline failed. Please check the logs.'
+        }
+    }
+}
