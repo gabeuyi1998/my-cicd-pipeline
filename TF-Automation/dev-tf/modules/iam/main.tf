@@ -43,9 +43,9 @@ resource "aws_iam_instance_profile" "ssm_profile" {
 }
 
 output "ecs_task_execution_role_arn" {
-  value = aws_iam_role.ecs_task_execution_role[0].arn
+  value = var.create_ecs_role ? aws_iam_role.ecs_task_execution_role[0].arn : null
 }
 
 output "ssm_profile_name" {
-  value = aws_iam_instance_profile.ssm_profile[0].name
+  value = var.create_ssm_role ? aws_iam_instance_profile.ssm_profile[0].name : null
 }

@@ -12,5 +12,5 @@ resource "aws_ecr_repository" "this" {
 }
 
 output "repo_url" {
-  value = aws_ecr_repository.this[0].repository_url
+  value = var.create_repo ? aws_ecr_repository.this[0].repository_url : null
 }
