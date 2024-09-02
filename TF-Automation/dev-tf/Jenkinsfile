@@ -20,8 +20,7 @@ pipeline {
         }
         stage('Terraform Init') {
             steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
-                                  credentialsId: 'aws-credentials']]) {
+                withAWS(credentials: 'aws-credentials', role: 'arn:aws:iam::866934333672:role/GO_CICD-Pipeline-Role') {
                     sh '''
                     terraform -chdir=TF-Automation/dev-tf init \
                         -backend-config="bucket=$TF_BUCKET" \
@@ -33,8 +32,7 @@ pipeline {
         stage('Terraform Plan & Apply') {
             steps {
                 script {
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
-                                      credentialsId: 'aws-credentials']]) {
+                    withAWS(credentials: 'aws-credentials', role: 'arn:aws:iam::866934333672:role/GO_CICD-Pipeline-Role') {
                         def planOutput = sh(script: '''
                         terraform -chdir=TF-Automation/dev-tf plan -out=tfplan
                         ''', returnStdout: true).trim()

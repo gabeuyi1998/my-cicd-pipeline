@@ -1,6 +1,9 @@
 # AWS Provider Configuration
 provider "aws" {
-  region = var.region
+  region  = var.region
+  assume_role {
+    role_arn = var.cicd_pipeline_role_arn
+  }
 }
 
 # ECR Module

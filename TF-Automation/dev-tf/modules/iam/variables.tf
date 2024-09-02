@@ -23,3 +23,8 @@ variable "create_ssm_role" {
   type        = bool
   default     = true
 }
+variable "cicd_pipeline_role_arn" {
+  description = "ARN of the IAM role used for the CI/CD pipeline"
+  type        = string
+  default     = "arn:aws:iam::866934333672:role/GO_CICD-Pipeline-Role"
+}
