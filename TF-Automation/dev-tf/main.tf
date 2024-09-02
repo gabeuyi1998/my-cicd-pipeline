@@ -25,12 +25,12 @@ data "aws_iam_role" "existing_ssm_role" {
 }
 
 module "iam" {
-  source                     = "./modules/iam"
-  environment                = var.environment
+  source                       = "./modules/iam"
+  environment                  = var.environment
   ecs_task_execution_role_name = var.ecs_task_execution_role_name
-  ssm_role_name              = var.ssm_role_name
-  create_ecs_role            = length(data.aws_iam_role.existing_ecs_role) == 0 ? true : false
-  create_ssm_role            = length(data.aws_iam_role.existing_ssm_role) == 0 ? true : false
+  ssm_role_name                = var.ssm_role_name
+  create_ecs_role              = length(data.aws_iam_role.existing_ecs_role) == 0 ? true : false
+  create_ssm_role              = length(data.aws_iam_role.existing_ssm_role) == 0 ? true : false
 }
 
 # ECS Module
@@ -47,11 +47,11 @@ module "ecs" {
 
 # EC2 Module
 module "ec2" {
-  source                   = "./modules/ec2"
-  environment              = var.environment
-  ami                      = var.ami
-  instance_type            = var.instance_type
-  subnet_id                = var.subnet_id
-  vpc_security_group_ids   = var.vpc_security_group_ids
+  source                    = "./modules/ec2"
+  environment               = var.environment
+  ami                       = var.ami
+  instance_type             = var.instance_type
+  subnet_id                 = var.subnet_id
+  vpc_security_group_ids    = var.vpc_security_group_ids
   iam_instance_profile_name = module.iam.ssm_profile_name
 }
