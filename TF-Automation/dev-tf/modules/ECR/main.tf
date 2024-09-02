@@ -1,5 +1,6 @@
 resource "aws_ecr_repository" "this" {
-  name = var.repo_name
+  count = var.create_repo ? 1 : 0
+  name  = var.repo_name
 
   image_scanning_configuration {
     scan_on_push = true
@@ -11,5 +12,5 @@ resource "aws_ecr_repository" "this" {
 }
 
 output "repo_url" {
-  value = aws_ecr_repository.this.repository_url
+  value = aws_ecr_repository.this[0].repository_url
 }

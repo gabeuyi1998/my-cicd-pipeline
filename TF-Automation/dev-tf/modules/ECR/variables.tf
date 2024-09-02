@@ -7,3 +7,8 @@ variable "environment" {
   description = "Environment (e.g., Production)"
   type        = string
 }
+variable "create_repo" {
+  description = "Flag to determine whether to create the ECR repository"
+  type        = bool
+  default     = true
+}

@@ -12,3 +12,14 @@ variable "environment" {
   description = "Environment (e.g., Production)"
   type        = string
 }
+variable "create_ecs_role" {
+  description = "Flag to determine whether to create the ECS task execution role"
+  type        = bool
+  default     = true
+}
+
+variable "create_ssm_role" {
+  description = "Flag to determine whether to create the SSM role"
+  type        = bool
+  default     = true
+}

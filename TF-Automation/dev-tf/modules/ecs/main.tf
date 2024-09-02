@@ -6,6 +6,14 @@ resource "aws_ecs_cluster" "cluster" {
   }
 }
 
+resource "aws_cloudwatch_log_group" "ecs_log_group" {
+  name              = "/ecs/${var.task_definition_name}"
+  retention_in_days = 7
+  tags = {
+    Environment = var.environment
+  }
+}
+
 resource "aws_ecs_task_definition" "task" {
   family                   = var.task_definition_name
   network_mode             = "awsvpc"
@@ -24,7 +32,7 @@ resource "aws_ecs_task_definition" "task" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        awslogs-group         = "/ecs/${var.task_definition_name}"
+        awslogs-group         = aws_cloudwatch_log_group.ecs_log_group.name
         awslogs-region        = var.aws_region
         awslogs-stream-prefix = "ecs"
       }

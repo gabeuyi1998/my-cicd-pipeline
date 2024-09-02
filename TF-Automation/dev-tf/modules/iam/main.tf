@@ -1,4 +1,5 @@
 resource "aws_iam_role" "ecs_task_execution_role" {
+  count = var.create_ecs_role ? 1 : 0
   name = var.ecs_task_execution_role_name
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -16,12 +17,8 @@ resource "aws_iam_role" "ecs_task_execution_role" {
   }
 }
 
-resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
-  role       = aws_iam_role.ecs_task_execution_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-}
-
 resource "aws_iam_role" "ssm_role" {
+  count = var.create_ssm_role ? 1 : 0
   name = var.ssm_role_name
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -39,20 +36,16 @@ resource "aws_iam_role" "ssm_role" {
   }
 }
 
-resource "aws_iam_role_policy_attachment" "ssm_policy_attachment" {
-  role       = aws_iam_role.ssm_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}
-
 resource "aws_iam_instance_profile" "ssm_profile" {
+  count = var.create_ssm_role ? 1 : 0
   name = "${var.ssm_role_name}-profile"
-  role = aws_iam_role.ssm_role.name
+  role = aws_iam_role.ssm_role[0].name
 }
 
 output "ecs_task_execution_role_arn" {
-  value = aws_iam_role.ecs_task_execution_role.arn
+  value = aws_iam_role.ecs_task_execution_role[0].arn
 }
 
 output "ssm_profile_name" {
-  value = aws_iam_instance_profile.ssm_profile.name
+  value = aws_iam_instance_profile.ssm_profile[0].name
 }

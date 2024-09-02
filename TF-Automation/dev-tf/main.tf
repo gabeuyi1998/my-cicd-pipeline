@@ -4,18 +4,33 @@ provider "aws" {
 }
 
 # ECR Module
+data "aws_ecr_repository" "existing_repo" {
+  name = var.repo_name
+}
+
 module "ecr" {
   source      = "./modules/ECR"
   repo_name   = var.repo_name
   environment = var.environment
+  create_repo = length(data.aws_ecr_repository.existing_repo) == 0 ? true : false
 }
 
 # IAM Module
+data "aws_iam_role" "existing_ecs_role" {
+  name = var.ecs_task_execution_role_name
+}
+
+data "aws_iam_role" "existing_ssm_role" {
+  name = var.ssm_role_name
+}
+
 module "iam" {
   source                     = "./modules/iam"
   environment                = var.environment
   ecs_task_execution_role_name = var.ecs_task_execution_role_name
   ssm_role_name              = var.ssm_role_name
+  create_ecs_role            = length(data.aws_iam_role.existing_ecs_role) == 0 ? true : false
+  create_ssm_role            = length(data.aws_iam_role.existing_ssm_role) == 0 ? true : false
 }
 
 # ECS Module
