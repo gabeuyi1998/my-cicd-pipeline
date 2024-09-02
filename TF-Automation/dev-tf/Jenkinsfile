@@ -18,6 +18,26 @@ pipeline {
                     credentialsId: 'github-credentials'
             }
         }
+        stage('Check for Relevant Changes') {
+            steps {
+                script {
+                    // Get the list of files changed in the last commit
+                    def changes = sh(script: "git diff --name-only HEAD~1", returnStdout: true).trim()
+
+                    // Check if any relevant files have changed
+                    def relevantChanges = changes.contains('.tf') || changes.contains('.tfvars') || changes.contains('environments/')
+
+                    if (!relevantChanges) {
+                        echo "No relevant changes detected. Skipping Terraform stages."
+                        currentBuild.result = 'SUCCESS'
+                        // Exit early if no relevant changes
+                        sh 'exit 0'
+                    } else {
+                        echo "Relevant changes detected. Proceeding with Terraform stages."
+                    }
+                }
+            }
+        }
         stage('Terraform Init') {
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
@@ -32,20 +52,36 @@ pipeline {
         }
         stage('Terraform Plan') {
             steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
-                                  credentialsId: 'aws-credentials']]) {
-                    sh '''
-                    terraform -chdir=TF-Automation/dev-tf plan
-                    '''
+                script {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
+                                      credentialsId: 'aws-credentials']]) {
+                        def planOutput = sh(script: '''
+                        terraform -chdir=TF-Automation/dev-tf plan -out=tfplan
+                        ''', returnStdout: true).trim()
+
+                        if (planOutput.contains("No changes. Infrastructure is up-to-date.")) {
+                            currentBuild.result = 'SUCCESS'
+                            echo "No changes detected in Terraform plan. Skipping apply."
+                            // Mark the build as successful and skip the apply stage
+                            sh 'exit 0'
+                        } else {
+                            echo "Changes detected in Terraform plan. Proceeding to apply."
+                        }
+                    }
                 }
             }
         }
         stage('Terraform Apply') {
+            when {
+                expression {
+                    return currentBuild.result != 'SUCCESS'
+                }
+            }
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
                                   credentialsId: 'aws-credentials']]) {
                     sh '''
-                    terraform -chdir=TF-Automation/dev-tf apply -auto-approve
+                    terraform -chdir=TF-Automation/dev-tf apply -auto-approve tfplan
                     '''
                 }
             }

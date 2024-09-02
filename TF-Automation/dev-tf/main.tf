@@ -1,10 +1,11 @@
+# AWS Provider Configuration
 provider "aws" {
-  region = "ap-southeast-2"
+  region = var.region
 }
 
 # ECR Module
 module "ecr" {
-  source      = "./modules/ecr"
+  source      = "./modules/ECR"
   repo_name   = var.repo_name
   environment = var.environment
 }
@@ -38,13 +39,4 @@ module "ec2" {
   subnet_id                = var.subnet_id
   vpc_security_group_ids   = var.vpc_security_group_ids
   iam_instance_profile_name = module.iam.ssm_profile_name
-}
-
-# S3 Bucket and DynamoDB Table for Terraform state
-data "aws_s3_bucket" "terraform_state" {
-  bucket = var.terraform_state_bucket
-}
-
-data "aws_dynamodb_table" "terraform_locks" {
-  name = var.terraform_locks_table
 }

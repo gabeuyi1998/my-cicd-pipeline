@@ -58,3 +58,15 @@ resource "aws_ecs_service" "service" {
 output "cluster_id" {
   value = aws_ecs_cluster.cluster.id
 }
+
+output "service_name" {
+  value = aws_ecs_service.service.name
+}
+
+output "task_definition_arn" {
+  value = aws_ecs_task_definition.task.arn
+}
+
+output "ecs_service_url" {
+  value = aws_ecs_service.service.network_configuration[0].assign_public_ip ? "Public IP Assigned" : "No Public IP"
+}

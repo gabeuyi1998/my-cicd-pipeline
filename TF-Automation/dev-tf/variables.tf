@@ -1,3 +1,9 @@
+variable "region" {
+  description = "The AWS region to deploy resources in"
+  type        = string
+  default     = "ap-southeast-2"
+}
+
 variable "repo_name" {
   description = "Name of the ECR repository"
   type        = string
@@ -56,6 +62,11 @@ variable "instance_type" {
   description = "Instance type for the EC2 instance"
   type        = string
   default     = "t2.micro"
+}
+
+variable "iam_instance_profile_name" {
+  description = "Name of the IAM instance profile"
+  type        = string
 }
 
 variable "subnet_id" {
